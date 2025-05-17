@@ -1,2 +1,7 @@
 .env
 .env
+
+# runtime & env
+.venv/
+fmp_cache.sqlite
+__pycache__/
