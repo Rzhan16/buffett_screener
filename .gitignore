@@ -5,3 +5,4 @@
 .venv/
 fmp_cache.sqlite
 __pycache__/
+score_cache.sqlite

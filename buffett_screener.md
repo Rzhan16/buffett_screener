@@ -12,3 +12,4 @@ Data flow
 3. F-score calculation and SMA-200 momentum filter
 4. Risk calculation and position sizing
 5. Results to dashboard and trading signals
+6. src/scoring/buffett.py caches daily F-Scores (Valinvest wrapper)
