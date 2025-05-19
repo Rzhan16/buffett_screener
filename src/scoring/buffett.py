@@ -7,6 +7,8 @@ import sqlite3
 import datetime
 import json
 from typing import Dict, Tuple, Optional, Any, Union
+import logging
+import pandas as pd
 
 from dotenv import load_dotenv
 from valinvest import Fundamental
@@ -26,6 +28,71 @@ except (FileNotFoundError, ValueError, IndexError):
 
 __all__ = ["get_score", "F_SCORE_THRESHOLD"]
 
+logger = logging.getLogger(__name__)
+
+def get_f_score() -> pd.DataFrame:
+    """
+    Get F-scores for all stocks from cache or calculate if needed.
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with F-scores and required data for position sizing
+    """
+    cache_file = 'score_cache.sqlite'
+    cache_freshness = 86400  # 24 hours in seconds
+    
+    # Check if cache exists and is fresh
+    if os.path.exists(cache_file):
+        cache_age = datetime.datetime.now().timestamp() - os.path.getmtime(cache_file)
+        if cache_age < cache_freshness:
+            logger.info("Using cached F-scores")
+            return _load_from_cache(cache_file)
+    
+    # Calculate new scores
+    logger.info("Calculating new F-scores")
+    scores = _calculate_f_scores()
+    
+    # Cache results
+    _save_to_cache(scores, cache_file)
+    
+    return scores
+
+def _calculate_f_scores() -> pd.DataFrame:
+    """
+    Calculate F-scores for all stocks.
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with F-scores and required data
+    """
+    # TODO: Implement actual F-score calculation
+    # For now, return mock data for testing
+    return pd.DataFrame({
+        'score': [8, 7, 6, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+        'close': [100] * 12,
+        'atr': [2] * 12
+    }, index=['AAPL', 'MSFT', 'GOOG', 'AMZN', 'META', 'TSLA', 
+              'NVDA', 'AMD', 'INTC', 'IBM', 'ORCL', 'SAP'])
+
+def _load_from_cache(cache_file: str) -> pd.DataFrame:
+    """Load F-scores from SQLite cache."""
+    try:
+        with sqlite3.connect(cache_file) as conn:
+            return pd.read_sql("SELECT * FROM f_scores", conn, index_col='symbol')
+    except Exception as e:
+        logger.error(f"Failed to load from cache: {e}")
+        return _calculate_f_scores()
+
+def _save_to_cache(scores: pd.DataFrame, cache_file: str) -> None:
+    """Save F-scores to SQLite cache."""
+    try:
+        with sqlite3.connect(cache_file) as conn:
+            scores.to_sql('f_scores', conn, if_exists='replace')
+        logger.info(f"Saved F-scores to {cache_file}")
+    except Exception as e:
+        logger.error(f"Failed to save to cache: {e}")
 
 def _create_fundamental_analyzer(ticker: str, api_key: str) -> Fundamental:
     """

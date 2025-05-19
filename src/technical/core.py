@@ -3,9 +3,13 @@ Core technical indicators module.
 """
 import pandas as pd
 import numpy as np
-from typing import Union
+from typing import Union, List, Optional
+import logging
+import yfinance as yf
 
 __all__ = ["sma", "rsi", "atr"]
+
+logger = logging.getLogger(__name__)
 
 
 def sma(series: pd.Series, window: int) -> pd.Series:
@@ -150,4 +154,41 @@ def atr(high: pd.Series, low: pd.Series, close: pd.Series, window: int = 14) -> 
     # Calculate Average True Range
     atr_values = tr.rolling(window=window).mean()
     
-    return atr_values.dropna() 
+    return atr_values.dropna()
+
+
+def get_sma(symbols: List[str], window: int = 200) -> pd.DataFrame:
+    """
+    Get SMA data for a list of symbols.
+    
+    Parameters
+    ----------
+    symbols : List[str]
+        List of stock symbols
+    window : int, default 200
+        SMA window size
+        
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with close prices and SMA values
+    """
+    try:
+        # Download data for all symbols
+        data = yf.download(symbols, period='1y', progress=False)
+        
+        # Calculate SMA
+        sma = data['Close'].rolling(window=window).mean()
+        
+        # Prepare result DataFrame
+        result = pd.DataFrame({
+            'close': data['Close'].iloc[-1],
+            'sma_200': sma.iloc[-1]
+        })
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to get SMA data: {e}")
+        # Return empty DataFrame with correct columns
+        return pd.DataFrame(columns=['close', 'sma_200']) 

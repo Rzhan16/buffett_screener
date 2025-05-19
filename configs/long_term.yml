@@ -1,4 +1,8 @@
 strategy: long_term
 filters:
   f_score: 7
-  sma_200: true 
+  sma_200: true
+
+holding_days: 90
+risk_pct: 0.005
+mode: long 

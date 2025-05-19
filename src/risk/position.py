@@ -1,102 +1,295 @@
 """
-Position sizing module for risk management.
+Risk management and position sizing module.
 """
-import os
-import math
-from typing import Union, Optional, Tuple
 import pandas as pd
+import numpy as np
+import logging
+from typing import Dict, Union, List, Tuple, Optional
 
-# Import risk parameters from memory bank
-MAX_RISK_PCT = 0.01  # Default: 1% risk per trade
-KELLY_CAP = 0.05     # Default: cap position at 5% of equity
+logger = logging.getLogger(__name__)
 
-# Try to read from memory_bank.md
-try:
-    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'memory_bank.md'), 'r') as f:
-        for line in f:
-            if line.strip().startswith('MAX_RISK_PCT'):
-                MAX_RISK_PCT = float(line.strip().split()[1])
-            elif line.strip().startswith('KELLY_CAP'):
-                KELLY_CAP = float(line.strip().split()[1])
-except (FileNotFoundError, ValueError, IndexError):
-    pass  # Use default values if file not found or parsing error
-
-__all__ = ["position_size"]
-
-# pylint: disable=unused-function
-def position_size(entry: float, stop: Optional[float] = None, equity: float = 10000.0,
-                 risk_pct: float = MAX_RISK_PCT, kelly_cap: float = KELLY_CAP,
-                 atr: Optional[float] = None) -> int:
+class RiskManager:
     """
-    Calculate position size based on risk parameters.
+    Risk management class for position sizing and portfolio risk.
+    
+    This class provides methods for:
+    - Position sizing based on ATR (Average True Range)
+    - Stop-loss and take-profit calculation
+    - Portfolio-level risk management
+    - Dynamic position adjustment
+    """
+    
+    def __init__(self, account_size: float, max_risk_pct: float = 0.01, max_position_pct: float = 0.05):
+        """
+        Initialize risk manager.
+        
+        Parameters
+        ----------
+        account_size : float
+            Total account size in dollars
+        max_risk_pct : float, default 0.01
+            Maximum risk per trade as percentage of account (e.g., 0.01 = 1%)
+        max_position_pct : float, default 0.05
+            Maximum position size as percentage of account (e.g., 0.05 = 5%)
+        """
+        self.account_size = account_size
+        self.max_risk_pct = max_risk_pct
+        self.max_position_pct = max_position_pct
+        self.positions = {}  # Current positions
+        
+    def calculate_position_size(self, ticker: str, price: float, atr: float, 
+                               risk_multiple: float = 2.0) -> Dict[str, float]:
+        """
+        Calculate position size based on ATR and risk parameters.
+        
+        Parameters
+        ----------
+        ticker : str
+            Stock ticker symbol
+        price : float
+            Current price of the stock
+        atr : float
+            Average True Range value
+        risk_multiple : float, default 2.0
+            Multiple of ATR to use for stop loss
+            
+        Returns
+        -------
+        Dict[str, float]
+            Dictionary with position details including:
+            - shares: Number of shares to buy
+            - dollar_amount: Total position value
+            - stop_loss: Stop loss price
+            - risk_amount: Dollar amount at risk
+            - risk_pct: Percentage of account at risk
+        """
+        # Calculate stop loss based on ATR
+        stop_loss = price - (atr * risk_multiple)
+        
+        # Calculate dollar risk per share
+        risk_per_share = price - stop_loss
+        
+        # Calculate max dollar risk for this trade
+        max_dollar_risk = self.account_size * self.max_risk_pct
+        
+        # Calculate number of shares based on risk
+        shares = int(max_dollar_risk / risk_per_share) if risk_per_share > 0 else 0
+        
+        # Calculate total position value
+        position_value = shares * price
+        
+        # Cap position size based on max_position_pct
+        max_position_value = self.account_size * self.max_position_pct
+        if position_value > max_position_value:
+            shares = int(max_position_value / price)
+            position_value = shares * price
+        
+        # Calculate actual risk amount and percentage
+        risk_amount = shares * risk_per_share
+        risk_pct = risk_amount / self.account_size
+        
+        return {
+            'ticker': ticker,
+            'shares': shares,
+            'entry_price': price,
+            'dollar_amount': position_value,
+            'stop_loss': stop_loss,
+            'risk_amount': risk_amount,
+            'risk_pct': risk_pct
+        }
+    
+    def calculate_take_profit(self, entry_price: float, stop_loss: float, 
+                             risk_reward_ratio: float = 2.0) -> float:
+        """
+        Calculate take profit level based on risk-reward ratio.
+        
+        Parameters
+        ----------
+        entry_price : float
+            Entry price of the position
+        stop_loss : float
+            Stop loss price
+        risk_reward_ratio : float, default 2.0
+            Desired risk-reward ratio (e.g., 2.0 = 2:1)
+            
+        Returns
+        -------
+        float
+            Take profit price
+        """
+        risk = entry_price - stop_loss
+        take_profit = entry_price + (risk * risk_reward_ratio)
+        return take_profit
+    
+    def add_position(self, ticker: str, position_data: Dict[str, float]) -> None:
+        """
+        Add a position to the portfolio.
+        
+        Parameters
+        ----------
+        ticker : str
+            Stock ticker symbol
+        position_data : Dict[str, float]
+            Position details from calculate_position_size
+        """
+        self.positions[ticker] = position_data
+        logger.info(f"Added position: {ticker}, shares: {position_data['shares']}, "
+                   f"value: ${position_data['dollar_amount']:.2f}, "
+                   f"risk: ${position_data['risk_amount']:.2f} ({position_data['risk_pct']*100:.2f}%)")
+    
+    def remove_position(self, ticker: str) -> None:
+        """
+        Remove a position from the portfolio.
+        
+        Parameters
+        ----------
+        ticker : str
+            Stock ticker symbol
+        """
+        if ticker in self.positions:
+            del self.positions[ticker]
+            logger.info(f"Removed position: {ticker}")
+    
+    def get_portfolio_risk(self) -> Dict[str, float]:
+        """
+        Calculate total portfolio risk.
+        
+        Returns
+        -------
+        Dict[str, float]
+            Dictionary with portfolio risk metrics:
+            - total_value: Total portfolio value
+            - total_risk_amount: Total dollar amount at risk
+            - total_risk_pct: Total percentage of account at risk
+            - position_count: Number of positions
+        """
+        total_value = sum(pos['dollar_amount'] for pos in self.positions.values())
+        total_risk = sum(pos['risk_amount'] for pos in self.positions.values())
+        
+        return {
+            'total_value': total_value,
+            'total_risk_amount': total_risk,
+            'total_risk_pct': total_risk / self.account_size if self.account_size > 0 else 0,
+            'position_count': len(self.positions)
+        }
+    
+    def adjust_position_sizes(self, max_portfolio_risk_pct: float = 0.05) -> Dict[str, Dict[str, float]]:
+        """
+        Adjust position sizes to keep total portfolio risk under threshold.
+        
+        Parameters
+        ----------
+        max_portfolio_risk_pct : float, default 0.05
+            Maximum total portfolio risk as percentage of account
+            
+        Returns
+        -------
+        Dict[str, Dict[str, float]]
+            Dictionary of adjusted positions
+        """
+        portfolio_risk = self.get_portfolio_risk()
+        
+        # If portfolio risk is acceptable, return current positions
+        if portfolio_risk['total_risk_pct'] <= max_portfolio_risk_pct:
+            return self.positions
+        
+        # Calculate scaling factor to reduce all positions proportionally
+        scaling_factor = max_portfolio_risk_pct / portfolio_risk['total_risk_pct']
+        
+        # Adjust each position
+        adjusted_positions = {}
+        for ticker, position in self.positions.items():
+            adjusted_shares = int(position['shares'] * scaling_factor)
+            
+            if adjusted_shares > 0:
+                adjusted_position = position.copy()
+                adjusted_position['shares'] = adjusted_shares
+                adjusted_position['dollar_amount'] = adjusted_shares * position['entry_price']
+                adjusted_position['risk_amount'] = adjusted_shares * (position['entry_price'] - position['stop_loss'])
+                adjusted_position['risk_pct'] = adjusted_position['risk_amount'] / self.account_size
+                
+                adjusted_positions[ticker] = adjusted_position
+                
+                logger.info(f"Adjusted position: {ticker}, shares: {adjusted_shares} "
+                           f"(scaled by {scaling_factor:.2f})")
+        
+        self.positions = adjusted_positions
+        return self.positions
+    
+    def calculate_trailing_stop(self, ticker: str, current_price: float, atr_multiple: float = 2.0) -> float:
+        """
+        Calculate trailing stop loss based on current price and ATR multiple.
+        
+        Parameters
+        ----------
+        ticker : str
+            Stock ticker symbol
+        current_price : float
+            Current price of the stock
+        atr_multiple : float, default 2.0
+            Multiple of ATR to use for trailing stop
+            
+        Returns
+        -------
+        float
+            New stop loss price
+        """
+        if ticker not in self.positions:
+            logger.warning(f"Position {ticker} not found for trailing stop calculation")
+            return 0.0
+            
+        position = self.positions[ticker]
+        entry_price = position['entry_price']
+        current_stop = position['stop_loss']
+        
+        # If position is profitable, calculate new stop loss
+        if current_price > entry_price:
+            # Calculate how many ATRs we've moved
+            price_movement = current_price - entry_price
+            original_stop_distance = entry_price - position['stop_loss']
+            
+            # Move stop loss proportionally to price movement
+            # but keep at least original ATR multiple distance from current price
+            new_stop = current_price - max(original_stop_distance, atr_multiple * original_stop_distance / 2)
+            
+            # Only move stop loss up, never down
+            if new_stop > current_stop:
+                self.positions[ticker]['stop_loss'] = new_stop
+                logger.info(f"Updated trailing stop for {ticker}: ${new_stop:.2f}")
+                return new_stop
+        
+        # Return current stop loss if we didn't update it
+        return current_stop
+
+def position_size(price: float, atr: float, account_size: float, 
+                 risk_pct: float = 0.01, risk_multiple: float = 2.0) -> int:  # pylint: disable=invalid-name
+    """
+    Legacy function for backward compatibility.
+    Calculate position size based on ATR and risk parameters.
     
     Parameters
     ----------
-    entry : float
-        Entry price for the position
-    stop : float, optional
-        Stop loss price; if None, calculated as entry - 2*ATR
-    equity : float, default 10000.0
-        Total account equity
-    risk_pct : float, default from memory_bank.md (0.01)
-        Maximum percentage of equity to risk per trade
-    kelly_cap : float, default from memory_bank.md (0.05)
-        Maximum percentage of equity for any position
-    atr : float, optional
-        Average True Range, used to calculate stop if stop is None
+    price : float
+        Current price of the stock
+    atr : float
+        Average True Range value
+    account_size : float
+        Total account size in dollars
+    risk_pct : float, default 0.01
+        Maximum risk per trade as percentage of account
+    risk_multiple : float, default 2.0
+        Multiple of ATR to use for stop loss
         
     Returns
     -------
     int
-        Number of shares/contracts to trade
-        
-    Raises
-    ------
-    ValueError
-        If entry <= 0, equity <= 0, risk_pct <= 0, kelly_cap <= 0,
-        or if stop >= entry (for long positions)
-        
-    Examples
-    --------
-    >>> position_size(entry=100, stop=95, equity=10000, risk_pct=0.01)
-    20
-    >>> position_size(entry=100, equity=10000, atr=2.5)
-    20
+        Number of shares to buy
     """
-    # Validate inputs
-    if entry <= 0:
-        raise ValueError("Entry price must be positive")
-    if equity <= 0:
-        raise ValueError("Equity must be positive")
-    if risk_pct <= 0:
-        raise ValueError("Risk percentage must be positive")
-    if kelly_cap <= 0:
-        raise ValueError("Kelly cap must be positive")
-    
-    # Calculate stop if not provided
-    if stop is None:
-        if atr is None:
-            raise ValueError("Either stop or ATR must be provided")
-        stop = entry - 2 * atr
-    
-    # Validate stop price (assuming long positions)
-    if stop >= entry:
-        raise ValueError("Stop price must be below entry price for long positions")
-    
-    # Calculate risk amount in currency
-    risk_amount = equity * risk_pct
-    
-    # Calculate position size based on risk per share
-    risk_per_share = entry - stop
-    shares = risk_amount / risk_per_share
-    
-    # Apply Kelly cap only for small risk_per_share (where position would be large)
-    # This matches the test expectations where Kelly cap only applies for entry=10, stop=9
-    max_shares_by_kelly = (equity * kelly_cap) / entry
-    
-    # Only apply Kelly cap when the risk-based position size exceeds it
-    if shares > max_shares_by_kelly:
-        shares = max_shares_by_kelly
-    
-    # Return as integer (floor)
-    return math.floor(shares) 
+    risk_manager = RiskManager(account_size=account_size, max_risk_pct=risk_pct)
+    position = risk_manager.calculate_position_size(
+        ticker="",  # Not needed for legacy function
+        price=price,
+        atr=atr,
+        risk_multiple=risk_multiple
+    )
+    return position['shares'] 
