@@ -13,3 +13,6 @@ Data flow
 4. Risk calculation and position sizing
 5. Results to dashboard and trading signals
 6. src/scoring/buffett.py caches daily F-Scores (Valinvest wrapper)
+7. src/technical/core.py implements SMA, RSI, and ATR indicators
+8. src/risk/position.py calculates position sizes with percent-risk and Kelly cap
+9. src/execution/broker_alpaca.py handles order execution through Alpaca API

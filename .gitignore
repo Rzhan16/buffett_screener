@@ -1,8 +1,26 @@
-.env
+# Python virtual environment
+.venv/
+
+# Cache & compiled Python
+__pycache__/
+*.py[cod]
+
+# Environment secrets
 .env
 
-# runtime & env
-.venv/
+# SQLite caches
 fmp_cache.sqlite
-__pycache__/
 score_cache.sqlite
+
+# Logs and reports
+logs/
+reports/
+
+# Test coverage / pytest cache
+.coverage
+.cache/
+htmlcov/
+
+# VSCode / macOS
+.vscode/
+.DS_Store
