@@ -23,7 +23,7 @@ except (FileNotFoundError, ValueError, IndexError):
 
 __all__ = ["position_size"]
 
-
+# pylint: disable=unused-function
 def position_size(entry: float, stop: Optional[float] = None, equity: float = 10000.0,
                  risk_pct: float = MAX_RISK_PCT, kelly_cap: float = KELLY_CAP,
                  atr: Optional[float] = None) -> int:
