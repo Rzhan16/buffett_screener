@@ -1,0 +1,120 @@
+# Buffett + Momentum Screener Configuration
+# This configuration implements quality, sustainability, and momentum filters
+# for long-term value investing with technical confirmation
+
+# API Configuration
+api:
+  fmp:
+    base_url: "https://financialmodelingprep.com/api/v3"
+    cache_ttl: 86400  # 24 hours in seconds
+  yahoo:
+    base_url: "https://query1.finance.yahoo.com/v8/finance"
+    cache_ttl: 3600  # 1 hour in seconds
+
+# Quality & Sustainability Filters
+quality:
+  piotroski:
+    operating_cash_flow: true  # Must be positive
+    roa_increasing: true       # Year-over-year increase
+    debt_to_assets_decreasing: true
+    current_ratio_increasing: true
+  accruals:
+    max_ratio: 0.1  # (Net Income - Operating Cash Flow) / Total Assets
+  f_score:
+    min_score: 7
+
+# Industry & Sector Health
+industry:
+  revenue_growth:
+    min_cagr_3y: 0  # Filter out industries with negative growth
+  sector_rotation:
+    min_relative_strength: 0  # Compared to S&P 500
+    weight_by_strength: true
+
+# Growth & Momentum
+momentum:
+  relative_strength:
+    period: 180  # 6 months in days
+    percentile: 30  # Top 30% performers
+  volume:
+    short_ma: 20  # 20-day average
+    long_ma: 100  # 100-day average
+    min_ratio: 1.0  # 20-day > 100-day average
+
+# Financial Health
+financial:
+  debt:
+    min_interest_coverage: 3.0
+    max_debt_to_equity: 1.5
+    min_free_cash_flow_yield: 0.04  # 4%
+  dividend:
+    max_payout_ratio: 0.60  # 60%
+    min_growth_rate: 0  # 5-year dividend growth
+
+# Earnings Quality
+earnings:
+  consistency:
+    min_positive_years: 3  # 3-year positive EPS growth
+    max_negative_surprises: 0  # No negative surprises in last 4 quarters
+  revenue:
+    min_growth: 0
+    max_gross_margin_std: 0.05  # 5% standard deviation
+
+# Valuation
+valuation:
+  relative:
+    max_pe_vs_sector: 1.0  # P/E < sector median
+    max_ev_ebitda_vs_industry: 1.0  # EV/EBITDA < industry average
+  growth_adjusted:
+    max_peg: 2.0
+    max_price_to_book: 3.0
+
+# Technical
+technical:
+  trend:
+    min_adx: 25
+    max_rsi: 70
+  support_resistance:
+    min_ma20: true
+    max_std_dev: 2.0
+
+# Risk Management
+risk:
+  volatility:
+    max_beta: 1.5
+    max_volatility_vs_sector: 1.0  # 30-day volatility < sector average
+  liquidity:
+    min_market_cap: 1000000000  # $1B
+    min_avg_volume: 100000  # 100K shares
+
+# Output Configuration
+output:
+  format: "json"
+  fields:
+    - symbol
+    - name
+    - sector
+    - industry
+    - market_cap
+    - price
+    - f_score
+    - pe_ratio
+    - debt_to_equity
+    - free_cash_flow_yield
+    - revenue_growth
+    - eps_growth
+    - dividend_yield
+    - beta
+    - rsi
+    - adx
+    - volume_ratio
+    - relative_strength
+  sort_by: "f_score"
+  sort_order: "desc"
+  max_results: 50
+
+# Cache Configuration
+cache:
+  enabled: true
+  directory: "cache"
+  ttl: 86400  # 24 hours in seconds 

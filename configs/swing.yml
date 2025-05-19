@@ -1,0 +1,4 @@
+strategy: swing
+filters:
+  rsi: [30, 70]
+  sma_50: true 

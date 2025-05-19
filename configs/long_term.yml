@@ -1,0 +1,4 @@
+strategy: long_term
+filters:
+  f_score: 7
+  sma_200: true 
