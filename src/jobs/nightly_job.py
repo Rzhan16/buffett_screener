@@ -12,6 +12,7 @@ import yaml
 import requests
 import pandas as pd
 from pathlib import Path
+import yfinance as yf
 
 # Add src to Python path
 sys.path.append(str(Path(__file__).parent.parent.parent))
@@ -41,17 +42,41 @@ def load_config(config_path: str = 'configs/long_term.yml') -> Dict:
         raise
 
 def get_top_stocks(config: Dict, dry_run: bool = False) -> pd.DataFrame:
-    """Get top stocks based on F-score and SMA filter."""
+    """Get top stocks based on F-score and other filters."""
     # Get F-scores
-    f_scores = get_f_score()
+    universe = config.get("universe", "SP500")
+    f_scores = get_f_score(universe=universe)
     
-    # Get SMA-200 data
-    sma_data = get_sma(f_scores.index.tolist(), window=200)
-    
-    # Apply filters
+    # Apply F-score filter
     filtered = f_scores[f_scores['score'] >= config['filters']['f_score']]
-    if config['filters']['sma_200']:
+    
+    # Apply SMA filters
+    if 'sma_200' in config['filters'] and config['filters']['sma_200']:
+        sma_data = get_sma(filtered.index.tolist(), window=200)
         filtered = filtered[filtered.index.isin(sma_data[sma_data['close'] > sma_data['sma_200']].index)]
+    
+    if 'sma_50' in config['filters'] and config['filters']['sma_50']:
+        sma_data = get_sma(filtered.index.tolist(), window=50)
+        filtered = filtered[filtered.index.isin(sma_data[sma_data['close'] > sma_data['sma_50']].index)]
+    
+    # Apply price filter if configured
+    if 'max_price' in config['filters']:
+        filtered = filtered[filtered['close'] <= config['filters']['max_price']]
+    
+    # Apply market cap filters if configured
+    if 'min_market_cap' in config['filters'] or 'max_market_cap' in config['filters']:
+        for symbol in list(filtered.index):
+            try:
+                ticker_info = yf.Ticker(symbol).info
+                market_cap = ticker_info.get('marketCap', 0)
+                
+                if 'min_market_cap' in config['filters'] and market_cap < config['filters']['min_market_cap']:
+                    filtered = filtered.drop(symbol)
+                if 'max_market_cap' in config['filters'] and market_cap > config['filters']['max_market_cap']:
+                    filtered = filtered.drop(symbol)
+            except Exception as e:
+                logger.warning(f"Failed to get market cap for {symbol}: {e}")
+                filtered = filtered.drop(symbol)
     
     # Sort by score and take top 10
     top_stocks = filtered.sort_values('score', ascending=False).head(10)
@@ -137,7 +162,10 @@ def main():
             for symbol, size in positions.items():
                 price = top_stocks.loc[symbol, 'close']
                 atr = top_stocks.loc[symbol, 'atr']
-                submit_bracket(symbol, size, price, atr)
+                # Calculate stop loss and take profit based on ATR
+                stop_loss = price - (2 * atr)  # 2 ATR for stop loss
+                take_profit = price + (4 * atr)  # 4 ATR for take profit (2:1 risk-reward)
+                submit_bracket(symbol, size, price, take_profit, stop_loss)
                 logger.info(f"Submitted order for {symbol}")
         
         # 7. Post summary to Slack
