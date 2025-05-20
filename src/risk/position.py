@@ -261,35 +261,35 @@ class RiskManager:
         # Return current stop loss if we didn't update it
         return current_stop
 
-def position_size(price: float, atr: float, account_size: float, 
-                 risk_pct: float = 0.01, risk_multiple: float = 2.0) -> int:  # pylint: disable=invalid-name
+def position_size(price: float, atr: float, account_size: float, risk_pct: float = 0.01) -> float:
     """
-    Legacy function for backward compatibility.
-    Calculate position size based on ATR and risk parameters.
+    Calculate position size based on ATR.
     
     Parameters
     ----------
     price : float
-        Current price of the stock
+        Current price
     atr : float
         Average True Range value
     account_size : float
-        Total account size in dollars
-    risk_pct : float, default 0.01
-        Maximum risk per trade as percentage of account
-    risk_multiple : float, default 2.0
-        Multiple of ATR to use for stop loss
+        Account size in dollars
+    risk_pct : float
+        Risk percentage per trade (e.g., 0.01 for 1%)
         
     Returns
     -------
-    int
-        Number of shares to buy
+    float
+        Position size in dollars
     """
-    risk_manager = RiskManager(account_size=account_size, max_risk_pct=risk_pct)
-    position = risk_manager.calculate_position_size(
-        ticker="",  # Not needed for legacy function
-        price=price,
-        atr=atr,
-        risk_multiple=risk_multiple
-    )
-    return position['shares'] 
+    # Calculate risk amount
+    risk_amount = account_size * risk_pct
+    
+    # Use 2x ATR as stop loss distance
+    risk_per_share = 2 * atr
+    
+    # Calculate position size
+    if risk_per_share == 0:
+        return 0
+    
+    # Return position size in dollars
+    return (risk_amount / risk_per_share) * price 

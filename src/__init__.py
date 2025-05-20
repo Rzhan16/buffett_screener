@@ -1,0 +1,3 @@
+"""
+Buffett Screener package.
+"""
