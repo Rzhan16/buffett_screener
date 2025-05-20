@@ -1,4 +1,4 @@
-F_SCORE_THRESHOLD        7
+F_SCORE_THRESHOLD        5
 MOMENTUM_RULE            close>SMA200
 MAX_RISK_PCT             0.01
 KELLY_CAP                0.05
