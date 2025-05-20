@@ -1,5 +1,6 @@
 strategy: swing
 filters:
+  f_score: 7
   rsi: [30, 70]
   sma_50: true
 

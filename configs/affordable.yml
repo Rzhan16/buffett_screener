@@ -1,0 +1,12 @@
+strategy: affordable
+universe: MOCK_AFFORDABLE  # Use mock data for affordable stocks
+filters:
+  f_score: 7
+  sma_200: true
+  max_price: 50  # Maximum price per share
+  min_market_cap: 500000000  # $500M minimum market cap
+  max_market_cap: 10000000000  # $10B maximum market cap
+
+holding_days: 90
+risk_pct: 0.01  # Slightly higher risk tolerance for smaller caps
+mode: long 
