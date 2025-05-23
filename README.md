@@ -6,6 +6,48 @@ A quantitative stock screening and automated trading system inspired by Warren B
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 
+## Demo Screenshots
+
+### Settings and Filters
+![Settings Interface](docs/images/settings.png)
+The settings interface allows you to configure:
+- Buying Power: Set your investment capital (e.g., $39,000)
+- Risk % per Position: Control risk per trade (0.10% to 5.00%)
+- Universe Selection: Choose your stock universe (e.g., S&P 500)
+- Advanced Filters including:
+  - Minimum F-Score (1-9)
+  - Price Range ($1-$1000)
+  - Minimum Dividend Yield
+  - Maximum P/E Ratio
+
+### Stock Analysis - Amazon (AMZN)
+![Amazon Analysis](docs/images/amazon.png)
+Detailed analysis of Amazon (AMZN) showing:
+- F-Score: 9/9 (Perfect score)
+- Current Price: $210.00
+- Market Cap: $1800.00B
+- Key Metrics:
+  - P/E Ratio: 60.0
+  - Dividend Yield: 0.00%
+  - Beta: 1.30
+  - Portfolio %: 27.6%
+  - ATR: $3.80
+- Price chart showing recent performance
+
+### Stock Analysis - Apple (AAPL)
+![Apple Analysis](docs/images/apple.png)
+Detailed analysis of Apple (AAPL) showing:
+- F-Score: 8/9 (Strong score)
+- Current Price: $120.00
+- Market Cap: $2500.00B
+- Key Metrics:
+  - P/E Ratio: 28.0
+  - Dividend Yield: 0.60%
+  - Beta: 1.20
+  - Portfolio %: 24.0%
+  - ATR: $2.50
+- Price chart showing historical performance
+
 ## Overview
 
 Buffett Screener combines fundamental analysis, technical indicators, and modern portfolio theory to identify high-quality value stocks with strong financials and favorable price action. The system implements a systematic approach to:
@@ -161,4 +203,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 - [Piotroski F-Score](https://www.jstor.org/stable/2353324)
 - [FinGPT](https://github.com/AI4Finance-Foundation/FinGPT)
-- [vectorbt](https://github.com/polakowo/vectorbt) 
+- [vectorbt](https://github.com/polakowo/vectorbt)

@@ -1,13 +1,13 @@
 # Core dependencies
 pandas==1.5.3
 numpy==1.24.3
-pyyaml==6.0.1
+pyyaml==6.0
 requests==2.31.0
 beautifulsoup4==4.12.2
 html5lib==1.1
 
 # Data Visualization
-matplotlib==3.5.3  # Last version with good Python 3.9 support
+matplotlib==3.5.3
 cycler==0.11.0
 kiwisolver==1.4.5
 pyparsing==3.1.1
@@ -30,17 +30,11 @@ pytest==7.4.3
 pytest-cov==4.1.0
 
 # Data processing
-ta-lib==0.4.28
 scipy==1.10.1
 
 # Utilities
 python-dotenv==1.0.0
 tqdm==4.66.1
-
-# Embeddings
-torch==2.0.1
-transformers==4.30.2
-qdrant-client==1.1.1
 
 # Web Application
 streamlit==1.29.0 
