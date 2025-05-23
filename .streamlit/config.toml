@@ -7,6 +7,14 @@ textColor = "#262730"
 [server]
 maxUploadSize = 200
 enableXsrfProtection = true
+enableCORS = false
+enableWebsocketCompression = true
 
 [browser]
-gatherUsageStats = false 
+gatherUsageStats = false
+
+[runner]
+# Add these settings to help with package imports
+magicEnabled = true
+installTracer = true
+fixMatplotlib = true 
