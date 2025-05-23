@@ -11,9 +11,12 @@ matplotlib==3.8.2  # Explicitly set version for compatibility
 seaborn>=0.12.0
 plotly>=5.13.0
 
+# Financial Data
+yfinance==0.2.35  # Added explicit version for stability
+pandas-datareader>=0.10.0
+
 # API clients
 financialmodelingprep>=0.0.1
-yfinance>=0.2.0
 alpaca-trade-api>=3.0.0
 valinvest>=0.0.2        # For F-score calculation
 
@@ -28,6 +31,7 @@ scipy>=1.9.0   # For statistical calculations
 # Utilities
 python-dotenv>=0.19.0  # For environment variable management
 tqdm>=4.64.0          # For progress bars
+python-dateutil>=2.8.2
 
 # Embeddings
 torch>=2.0.0
