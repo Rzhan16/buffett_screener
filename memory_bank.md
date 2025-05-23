@@ -1,0 +1,6 @@
+F_SCORE_THRESHOLD        5
+MOMENTUM_RULE            close>SMA200
+MAX_RISK_PCT             0.01
+KELLY_CAP                0.05
+CACHE_FRESHNESS_SECONDS  86400
+LOCAL_LLM_ID             FinGPT-2
